@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Investment Tracker</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#000000">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Invest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{color-scheme:dark;--bg:#000;--s:#0d0d10;--s2:#15151a;--line:#25252d;--tx:#f3f3f5;--mu:#8d8d99;--ok:#4ade80;--bad:#fb7185;
+--fd:#5eead4;--ppf:#a78bfa;--mf:#60a5fa;--st:#fbbf24;--lent:#fb7185;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:Manrope,system-ui,-apple-system,Segoe UI,sans-serif;line-height:1.45}
+.wrap{max-width:720px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:22px;margin:4px 0 16px;font-weight:800;letter-spacing:-.02em}
+h2{font-size:16px;margin:0 0 12px;font-weight:700}
+.tabs{display:flex;gap:4px;background:var(--s);border:1px solid var(--line);border-radius:14px;padding:4px;margin-bottom:18px;position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+.tabs button{flex:1;background:none;border:0;color:var(--mu);font:600 14px Manrope,sans-serif;padding:10px 4px;border-radius:10px;cursor:pointer}
+.tabs button.on{background:var(--tx);color:#000}
+.card{background:var(--s);border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:14px}
+.pane{display:none}.pane.on{display:block}
+.donut{display:flex;align-items:center;gap:22px;flex-wrap:wrap;justify-content:center}
+.dwrap{position:relative;width:210px;height:210px}
+.dwrap svg{transform:rotate(-90deg)}
+.dc{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.dc b{font-size:22px;font-weight:800}.dc span{font-size:12px;color:var(--mu)}
+.leg{flex:1;min-width:180px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:8px}
+.mu{color:var(--mu);font-size:13px}
+.bar{height:6px;background:var(--s2);border-radius:6px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;border-radius:6px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+label{font-size:12px;color:var(--mu);display:block;margin-bottom:4px}
+input,select{width:100%;background:var(--s2);border:1px solid var(--line);border-radius:10px;color:var(--tx);font:500 15px Manrope,sans-serif;padding:11px 12px}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--mf);outline-offset:1px}
+.btn{background:var(--tx);color:#000;border:0;border-radius:10px;font:700 14px Manrope,sans-serif;padding:12px 16px;cursor:pointer;margin-top:12px;width:100%}
+.x{background:none;border:1px solid var(--line);color:var(--mu);border-radius:8px;padding:6px 10px;cursor:pointer;font:600 12px Manrope,sans-serif}
+.x:hover{color:var(--bad);border-color:var(--bad)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:var(--s2);color:var(--mu);border-radius:999px;padding:8px 14px;font:600 13px Manrope,sans-serif;cursor:pointer}
+.chip.on{color:#000;border-color:transparent}
+.big{font-size:26px;font-weight:800;letter-spacing:-.02em}
+.empty{color:var(--mu);font-size:14px;padding:8px 0}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl td,.tbl th{padding:9px 4px;border-bottom:1px solid var(--line);text-align:right}
+.tbl th{color:var(--mu);font-weight:600;font-size:12px}
+.tbl td:first-child,.tbl th:first-child{text-align:left}
+.scroll{overflow-x:auto}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px}.top .x{color:var(--tx)}[hidden]{display:none!important}.sm{width:110px;padding:8px 10px;font-size:14px}
+.linkrow{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;background:none;border:0;color:var(--tx);font:700 15px Manrope,sans-serif;cursor:pointer;padding:0;text-align:left}
+.fbar{display:flex;gap:8px;align-items:center}
+.ib{position:relative;width:46px;height:46px;flex:none;border:1px solid var(--line);border-radius:12px;background:var(--s2);display:flex;align-items:center;justify-content:center;color:var(--mu);margin:0;padding:0;cursor:pointer}
+.ib.on{color:var(--mf);border-color:var(--mf)}
+.ib svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+.ib select,.ib input{position:absolute;inset:0;width:100%;height:100%;opacity:0;padding:0;border:0;cursor:pointer;font-size:16px}
+.good{color:var(--ok)}.warn{color:var(--bad)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="top"><h1>Investment tracker</h1><button class="x" id="dl" hidden>Download Excel</button></div>
+<div class="tabs" id="tabs" role="tablist">
+<button class="on" data-t="a">Overview</button>
+<button data-t="b">Plans</button>
+<button data-t="c">Retirement goal</button>
+</div>
+
+<section class="pane on" id="a">
+<div class="card">
+<h2>Invested vs lent</h2>
+<div class="donut">
+<div class="dwrap"><svg id="pie" width="210" height="210" viewBox="0 0 210 210"></svg>
+<div class="dc"><span>Total</span><b id="tot">₹0</b></div></div>
+<div class="leg" id="leg"></div>
+</div>
+</div>
+<div class="card"><h2>Invested by plan type</h2><div id="bytype"></div></div>
+</section>
+
+<section class="pane" id="b">
+<div class="card">
+<h2 id="ft">Add invested amount</h2>
+<div class="grid">
+<div><label for="pt">Type</label><select id="pt"></select></div>
+<div><label for="pn">Name</label><input id="pn" placeholder="e.g. SBI 5-year FD"></div>
+<div id="wa"><label for="pa">Invested amount (₹)</label><input id="pa" type="number" inputmode="decimal" min="0"></div>
+<div id="wsip" hidden><label for="ps">Monthly SIP (₹)</label><input id="ps" type="number" inputmode="decimal" min="0"></div>
+<div><label for="pr">Expected return (% a year)</label><input id="pr" type="number" inputmode="decimal" step="0.1" value="7"></div>
+<div><label for="pd1" id="l1">Start date</label><input id="pd1" type="date"></div>
+<div><label for="pd2" id="l2">End date</label><input id="pd2" type="date"></div>
+</div>
+<div style="display:flex;gap:8px"><button class="btn" id="addp">Add invested amount</button><button class="btn" id="canp" hidden style="background:var(--s2);color:var(--tx);border:1px solid var(--line)">Cancel</button></div>
+</div>
+<div class="card"><button class="linkrow" id="seeinv"><span>Click here to see invested amount</span><span class="mu" id="invtot"></span><span>›</span></button></div>
+<div class="card">
+<h2>Add money lent to others</h2>
+<div class="grid">
+<div><label for="ln">Person</label><input id="ln" placeholder="Name"></div>
+<div><label for="la">Amount lent (₹)</label><input id="la" type="number" inputmode="decimal" min="0"></div>
+</div>
+<button class="btn" id="addl">Add loan</button>
+</div>
+<div class="card"><h2>Lent out</h2><div id="llist"></div></div>
+<div class="card">
+<h2 id="tt">Add your own plan type</h2>
+<div class="grid">
+<div><label for="tn">Type name</label><input id="tn" placeholder="e.g. Gold, NPS, Chit fund"></div>
+<div><label for="tr">Expected return (% a year)</label><input id="tr" type="number" inputmode="decimal" step="0.1" value="8"></div>
+</div>
+<label style="margin-top:12px;display:flex;gap:8px;align-items:center"><input id="ts" type="checkbox" style="width:auto"> Invested as a monthly SIP</label>
+<div style="display:flex;gap:8px"><button class="btn" id="addt">Add plan type</button><button class="btn" id="cant" hidden style="background:var(--s2);color:var(--tx);border:1px solid var(--line)">Cancel</button></div>
+<div class="warn mu" id="tm" style="margin-top:8px"></div>
+<div id="tlist" style="margin-top:8px"></div>
+</div>
+</section>
+
+<section class="pane" id="inv">
+<div class="top"><button class="x" id="back">‹ Back</button><h2 style="margin:0">Invested amount</h2></div>
+<div class="card" style="margin-top:14px">
+<div class="fbar">
+<label class="ib" id="bty" title="Plan type"><svg viewBox="0 0 24 24"><path d="M3 5h18l-7 8v6l-4-2v-4z"/></svg><select id="fty" aria-label="Plan type"></select></label>
+<label class="ib" id="bso" title="Sort"><svg viewBox="0 0 24 24"><path d="M8 4v16M8 20l-3-3M8 20l3-3M16 20V4M16 4l-3 3M16 4l3 3"/></svg><select id="fs" aria-label="Sort"><option value="new">Latest date first</option><option value="old">Oldest date first</option><option value="amt">Highest amount</option></select></label>
+<label class="ib" id="bf" title="Invested from"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4M8 15h6m-2-2l2 2-2 2"/></svg><input id="ff" type="date" aria-label="Invested from"></label>
+<label class="ib" id="bto" title="Invested to"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4M7 15h6m-2-2l2 2-2 2M17 12v6"/></svg><input id="fto" type="date" aria-label="Invested to"></label>
+<button class="ib" id="fclr" hidden aria-label="Clear filters"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+</div>
+<div class="mu" id="fsum" style="margin-top:10px"></div>
+</div>
+<div class="card"><div id="ilist"></div><div class="mu" id="isum" style="margin-top:10px"></div></div>
+</section>
+
+<section class="pane" id="c">
+<div class="card">
+<h2>Your goal</h2>
+<div class="grid">
+<div><label for="gt">Target amount (₹)</label><input id="gt" type="number" inputmode="decimal" min="0"></div>
+<div><label for="ga">Current age</label><input id="ga" type="number" inputmode="numeric" min="0"></div>
+<div><label for="gr">Retirement age</label><input id="gr" type="number" inputmode="numeric" min="0"></div>
+</div>
+<label style="margin-top:14px">Plans to count toward this goal</label>
+<div class="chips" id="chips"></div>
+</div>
+<div id="res"></div>
+</section>
+</div>
+
+<script>
+const BASE=['FD','PPF','Mutual Fund','Stocks'];
+const BCOL={'FD':'#5eead4','PPF':'#a78bfa','Mutual Fund':'#60a5fa','Stocks':'#fbbf24'};
+const BDEF={'FD':7,'PPF':7.1,'Mutual Fund':12,'Stocks':14};
+const PAL=['#f472b6','#fb923c','#34d399','#38bdf8','#c084fc','#facc15','#f87171','#2dd4bf'];
+let TYPES=[...BASE],COL={...BCOL},DEF={...BDEF},SIPT=['Mutual Fund'];
+function syncTypes(){TYPES=[...BASE];COL={...BCOL};DEF={...BDEF,...S.bdef};SIPT=['Mutual Fund'];S.custom.forEach((c,i)=>{TYPES.push(c.name);COL[c.name]=PAL[i%PAL.length];DEF[c.name]=c.rate;if(c.sip)SIPT.push(c.name)})}
+let S={custom:[],plans:[],loans:[],goal:{target:'',age:'',retire:'',sel:[],add:{}}};
+try{const r=localStorage.getItem('invtrack');if(r)S=Object.assign(S,JSON.parse(r));S.goal.add=S.goal.add||{}}catch(e){}
+const $=id=>document.getElementById(id);
+S.custom=S.custom||[];S.bdef=S.bdef||{};syncTypes();
+const save=()=>{try{localStorage.setItem('invtrack',JSON.stringify(S))}catch(e){}};
+const inr=n=>'₹'+Math.round(n).toLocaleString('en-IN');
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const sum=(a,f)=>a.reduce((x,y)=>x+f(y),0);
+
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));
+  document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('on',p.id===b.dataset.t));
+  render();
+});
+
+const fmt=d=>d?new Date(d).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}):'—';
+const isMF=p=>SIPT.includes(p.type);
+function inst(p){ // SIP instalments paid so far
+  if(!isMF(p)||!p.start)return 0;const s=new Date(p.start),n=new Date(),e=p.end&&new Date(p.end)<n?new Date(p.end):n;
+  if(e<s)return 0;return (e.getFullYear()-s.getFullYear())*12+e.getMonth()-s.getMonth()+(e.getDate()>=s.getDate()?1:0)}
+const invested=p=>isMF(p)&&p.start?inst(p)*p.sip:(p.amount||0);
+
+function overview(){
+  const inv=sum(S.plans,invested), lent=sum(S.loans,l=>l.amount), tot=inv+lent;
+  $('tot').textContent=inr(tot);
+  const segs=[['Invested',inv,'#7dd3fc'],['Lent to others',lent,'#fb7185']];
+  const R=82,C=2*Math.PI*R; let off=0, h='<circle cx="105" cy="105" r="'+R+'" fill="none" stroke="#15151a" stroke-width="26"/>';
+  if(tot>0)segs.forEach(s=>{if(!s[1])return;const l=s[1]/tot*C;
+    h+=`<circle cx="105" cy="105" r="${R}" fill="none" stroke="${s[2]}" stroke-width="26" stroke-dasharray="${l} ${C-l}" stroke-dashoffset="${-off}"/>`;off+=l});
+  $('pie').innerHTML=h;
+  $('leg').innerHTML=tot?segs.map(s=>`<div class="row"><span><span class="dot" style="background:${s[2]}"></span>${s[0]}</span><span><b>${inr(s[1])}</b> <span class="mu">${(s[1]/tot*100).toFixed(1)}%</span></span></div>`).join(''):'<div class="empty">Add plans or loans in the Plans tab to see your split.</div>';
+  $('bytype').innerHTML=inv?TYPES.map(t=>{const v=sum(S.plans.filter(p=>p.type===t),invested);
+    return `<div style="margin-bottom:12px"><div class="row" style="border:0;padding:0"><span><span class="dot" style="background:${COL[t]}"></span>${t}</span><b>${inr(v)}</b></div><div class="bar"><i style="width:${v/inv*100}%;background:${COL[t]}"></i></div></div>`}).join(''):'<div class="empty">No investment plans yet.</div>';
+}
+
+function lists(){
+  $('invtot').textContent=S.plans.length?S.plans.length+' · '+inr(sum(S.plans,invested)):'';
+  $('llist').innerHTML=S.loans.length?S.loans.map((l,i)=>`<div class="row"><b>${esc(l.name)}</b><div style="text-align:right"><b>${inr(l.amount)}</b><br><button class="x" data-l="${i}">Remove</button></div></div>`).join(''):'<div class="empty">Nothing lent out.</div>';
+  document.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{S.plans.splice(+b.dataset.p,1);save();render()});
+  document.querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>{S.loans.splice(+b.dataset.l,1);save();render()});
+}
+
+function typeUI(){
+  const mf=SIPT.includes($('pt').value);
+  $('wa').hidden=mf;$('wsip').hidden=!mf;
+  $('l1').textContent=mf?'SIP start date':'Start date';
+  $('l2').textContent=mf?'SIP end date (optional)':'End / maturity date';
+  $('pr').value=DEF[$('pt').value];
+}
+$('pt').onchange=typeUI;
+let EI=-1,FROMLIST=false;
+function endEdit(){EI=-1;$('ft').textContent='Add invested amount';$('addp').textContent='Add invested amount';$('canp').hidden=true;
+  ['pn','pa','ps','pd1','pd2'].forEach(i=>$(i).value='');typeUI();
+  if(FROMLIST){FROMLIST=false;openInv()}}
+$('addp').onclick=()=>{
+  const t=$('pt').value, mf=SIPT.includes(t), rate=+$('pr').value, start=$('pd1').value, end=$('pd2').value;
+  const amount=+$('pa').value, sip=+$('ps').value;
+  if(mf?!(sip>0&&start):!(amount>0)){(mf?(sip>0?$('pd1'):$('ps')):$('pa')).focus();return}
+  const o={type:t,name:$('pn').value.trim()||t,amount:mf?0:amount,sip:mf?sip:0,rate:isNaN(rate)?0:rate,start,end};
+  if(EI>=0)S.plans[EI]=o;else S.plans.push(o);
+  save();const ed=EI>=0;if(ed)endEdit();else{['pn','pa','ps','pd1','pd2'].forEach(i=>$(i).value='')}render();
+};
+$('canp').onclick=endEdit;
+
+function openInv(){document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('on',p.id==='inv'));$('tabs').hidden=true;scrollTo(0,0);invList()}
+function showPlans(){$('tabs').hidden=false;document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x.dataset.t==='b'));document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('on',p.id==='b'))}
+$('seeinv').onclick=openInv;
+$('back').onclick=()=>{showPlans();render()};
+['fty','fs','ff','fto'].forEach(i=>$(i).oninput=invList);
+['ff','fto'].forEach(i=>$(i).addEventListener('click',e=>{try{e.target.showPicker()}catch(_){}}));
+$('fclr').onclick=()=>{$('fty').value='';$('fs').value='new';$('ff').value='';$('fto').value='';invList()};
+function editPlan(i){
+  const p=S.plans[i];EI=i;FROMLIST=true;showPlans();
+  $('pt').value=p.type;typeUI();
+  $('pn').value=p.name;$('pa').value=p.amount||'';$('ps').value=p.sip||'';$('pr').value=p.rate;$('pd1').value=p.start||'';$('pd2').value=p.end||'';
+  $('ft').textContent='Edit invested amount';$('addp').textContent='Save changes';$('canp').hidden=false;scrollTo(0,0);
+}
+function invList(){
+  const fs=$('fty'),v=fs.value;
+  fs.innerHTML='<option value="">All plan types</option>'+TYPES.map(t=>`<option>${esc(t)}</option>`).join('');fs.value=TYPES.includes(v)?v:'';
+  const f=$('ff').value,t2=$('fto').value,so=$('fs').value;
+  const a=S.plans.map((p,i)=>({p,i})).filter(({p})=>(!fs.value||p.type===fs.value)&&(!f||(p.start&&p.start>=f))&&(!t2||(p.start&&p.start<=t2)));
+  a.sort((x,y)=>so==='amt'?invested(y.p)-invested(x.p):so==='old'?(x.p.start||'9').localeCompare(y.p.start||'9'):(y.p.start||'').localeCompare(x.p.start||''));
+  $('bty').classList.toggle('on',!!fs.value);$('bso').classList.toggle('on',so!=='new');$('bf').classList.toggle('on',!!f);$('bto').classList.toggle('on',!!t2);
+  $('fclr').hidden=!(fs.value||f||t2||so!=='new');
+  $('fsum').textContent=[fs.value,f&&'From '+fmt(f),t2&&'To '+fmt(t2),{new:'Latest first',old:'Oldest first',amt:'Highest amount'}[so]].filter(Boolean).join(' · ');
+  $('ilist').innerHTML=a.length?a.map(({p,i})=>`<div class="row"><div><span class="dot" style="background:${COL[p.type]}"></span><b>${esc(p.name)}</b><div class="mu">${esc(p.type)} · ${p.rate}% a year${isMF(p)?` · SIP ${inr(p.sip)}/month · ${inst(p)} instalments`:''}</div><div class="mu">Invested ${fmt(p.start)}${p.end?' · ends '+fmt(p.end):''}</div></div><div style="text-align:right"><b>${inr(invested(p))}</b><div style="margin-top:6px;display:flex;gap:6px;justify-content:flex-end"><button class="x" data-e="${i}">Edit</button><button class="x" data-d="${i}">Delete</button></div></div></div>`).join(''):'<div class="empty">'+(S.plans.length?'Nothing matches these filters.':'No invested amounts yet. Add one in the Plans tab.')+'</div>';
+  $('isum').textContent=a.length?`${a.length} of ${S.plans.length} shown · Total ${inr(sum(a,x=>invested(x.p)))}`:'';
+  document.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>editPlan(+b.dataset.e));
+  document.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{
+    if(!b.dataset.armed){b.dataset.armed=1;b.textContent='Tap to confirm';b.style.color='var(--bad)';setTimeout(()=>{b.dataset.armed='';b.textContent='Delete';b.style.color=''},3000);return}
+    S.plans.splice(+b.dataset.d,1);save();render()});
+}
+$('addl').onclick=()=>{
+  const amount=+$('la').value;if(!(amount>0)){$('la').focus();return}
+  S.loans.push({name:$('ln').value.trim()||'Unnamed',amount});$('ln').value='';$('la').value='';save();render();
+};
+
+let R=[],LAST=null;
+function goal(){
+  const g=S.goal;
+  $('chips').innerHTML=TYPES.map(t=>`<button class="chip ${g.sel.includes(t)?'on':''}" data-c="${t}" ${g.sel.includes(t)?`style="background:${COL[t]}"`:''}>${t}</button>`).join('');
+  document.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{
+    const t=b.dataset.c;g.sel=g.sel.includes(t)?g.sel.filter(x=>x!==t):[...g.sel,t];save();goal()});
+  calc();
+}
+function calc(){
+  const g=S.goal, T=+g.target, a=+g.age, r=+g.retire, n=r-a, out=$('res'); LAST=null;
+  if(!g.sel.length){out.innerHTML='<div class="card empty">Select the plans to count toward your goal.</div>';return}
+  const sel=S.plans.filter(p=>g.sel.includes(p.type)), inv=sum(sel,invested);
+  let h=`<div class="card"><div class="mu">Invested in selected plans</div><div class="big">${inr(inv)}</div>`;
+  if(!(T>0&&a>0&&r>0)){out.innerHTML=h+'<div class="mu" style="margin-top:10px">Enter a target amount, your age and retirement age to see how much more to invest.</div></div>';return}
+  if(n<=0){out.innerHTML=h+'<div class="warn" style="margin-top:10px">Retirement age must be higher than your current age.</div></div>';return}
+  const rem=Math.max(0,T-inv), m=n*12; let exist=0; R=[];
+  g.sel.forEach(t=>{
+    const ps=S.plans.filter(p=>p.type===t), lump=sum(ps,invested);
+    const rate=(lump>0?sum(ps,p=>invested(p)*p.rate)/lump:ps.length?sum(ps,p=>p.rate)/ps.length:DEF[t])/100;
+    const i=rate/12, grow=Math.pow(1+i,m), f=(i>0?(grow-1)/i:m);
+    let fv=lump*Math.pow(1+rate,n);
+    ps.filter(isMF).forEach(p=>{ // ongoing SIP, capped by its end date
+      let k=m;if(p.end){const e=new Date(p.end),d=new Date();k=Math.max(0,Math.min(m,(e.getFullYear()-d.getFullYear())*12+e.getMonth()-d.getMonth()))}
+      fv+=p.sip*(i>0?(Math.pow(1+i,k)-1)/i:k)*Math.pow(1+i,m-k)});
+    exist+=fv;R.push({t,rate,f,fv});
+  });
+  const gap=T-exist, best=R.reduce((x,y)=>y.rate>x.rate?y:x);
+  h+=`<div class="mu" style="margin-top:12px">Target</div><b>${inr(T)}</b>
+  <div class="mu" style="margin-top:12px">Remaining to invest</div><div class="big ${rem?'warn':'good'}">${inr(rem)}</div></div>`;
+  if(gap<=0){out.innerHTML=h+'<div class="card"><b class="good">You are on track.</b><div class="mu">Your selected plans are projected to reach the target by age '+r+' without extra investing.</div></div>';
+    LAST={inv,rem,rows:[]};return}
+  const need=gap/best.f; R.forEach(x=>{if(g.add[x.t]===undefined)x.add=x===best?Math.ceil(need):0;else x.add=+g.add[x.t]||0});
+  out.innerHTML=h+`<div class="card"><h2>Where to invest</h2>
+  <div style="margin-bottom:12px">Best option: <b style="color:${COL[best.t]}">${best.t}</b> <span class="mu">(highest expected return, ${(best.rate*100).toFixed(1)}% a year, but also higher risk)</span><br>
+  <span class="mu">Investing only here needs</span> <b>${inr(need)}</b> <span class="mu">a month for ${n} years.</span></div>
+  <label>Amount to add each month (edit any plan)</label>`+
+  R.map((x,k)=>`<div class="row"><span><span class="dot" style="background:${COL[x.t]}"></span>${x.t} <span class="mu">${(x.rate*100).toFixed(1)}%</span></span><span>₹ <input class="sm" type="number" min="0" inputmode="decimal" data-a="${k}" value="${x.add}"></span></div>`).join('')+
+  `<div id="out" style="margin-top:12px"></div></div>`;
+  document.querySelectorAll('[data-a]').forEach(el=>el.oninput=()=>{const x=R[+el.dataset.a];x.add=+el.value||0;g.add[x.t]=el.value;save();upd(T,exist,r,inv,rem)});
+  upd(T,exist,r,inv,rem);
+}
+function upd(T,exist,r,inv,rem){
+  const proj=exist+sum(R,x=>x.add*x.f), left=T-proj, pct=Math.min(100,proj/T*100);
+  LAST={inv,rem,rows:R.map(x=>({t:x.t,add:x.add}))};
+  $('out').innerHTML=`<div class="mu">Projected at age ${r} with these amounts</div><div class="big ${left<=0?'good':''}">${inr(proj)}</div><div class="bar" style="height:8px"><i style="width:${pct}%;background:${left<=0?'var(--ok)':'var(--mf)'}"></i></div>
+  <div style="margin-top:6px">${left<=0?'<b class="good">Target covered.</b>':'<b class="warn">Still short by '+inr(left)+'</b>'} <span class="mu">(${pct.toFixed(0)}% of target)</span></div><div class="mu" style="margin-top:6px">Returns are estimates, not guarantees.</div>`;
+}
+[['gt','target'],['ga','age'],['gr','retire']].forEach(([id,k])=>{
+  $(id).value=S.goal[k];$(id).oninput=()=>{S.goal[k]=$(id).value;save();calc()}});
+
+$('dl').hidden=false;
+$('dl').onclick=async()=>{
+  if(!window.XLSX){alert('The Excel library did not load. Connect to the internet once and try again.');return}
+  const wb=XLSX.utils.book_new(), add=(n,rows)=>XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),n);
+  const inv=sum(S.plans,invested), lent=sum(S.loans,l=>l.amount);
+  add('Summary',[['Item','Amount (INR)'],['Invested',inv],['Lent to others',lent],['Total',inv+lent],[],...TYPES.map(t=>[t,sum(S.plans.filter(p=>p.type===t),invested)])]);
+  add('Plans',[['Type','Name','Invested (INR)','Monthly SIP (INR)','SIP instalments','Return % a year','Start date','End date'],...S.plans.map(p=>[p.type,p.name,invested(p),isMF(p)?p.sip:'',isMF(p)?inst(p):'',p.rate,p.start||'',p.end||''])]);
+  add('Lent',[['Person','Amount (INR)'],...S.loans.map(l=>[l.name,l.amount])]);
+  const g=S.goal;
+  add('Retirement goal',[['Target (INR)',+g.target||''],['Current age',+g.age||''],['Retirement age',+g.retire||''],['Plans selected',g.sel.join(', ')],['Invested in selected plans',LAST?LAST.inv:''],['Remaining to invest',LAST?LAST.rem:''],[],['Plan','Monthly amount to add (INR)'],...(LAST?LAST.rows.map(x=>[x.t,x.add]):[])]);
+  XLSX.writeFile(wb,'investment-tracker.xlsx');
+};
+
+function fillSel(){const v=$('pt').value;$('pt').innerHTML=TYPES.map(t=>`<option>${esc(t)}</option>`).join('');if(TYPES.includes(v))$('pt').value=v}
+let TE=null;
+function endTE(){TE=null;$('tt').textContent='Add your own plan type';$('addt').textContent='Add plan type';$('cant').hidden=true;$('tn').disabled=false;$('ts').disabled=false;$('tn').value='';$('tr').value=8;$('ts').checked=false;$('tm').textContent=''}
+function typeList(){
+  $('tlist').innerHTML=TYPES.map(t=>{const c=S.custom.find(x=>x.name===t);
+    return `<div class="row"><div><span class="dot" style="background:${COL[t]}"></span><b>${esc(t)}</b><div class="mu">${DEF[t]}% a year \u00b7 ${SIPT.includes(t)?'monthly SIP':'lump sum'}${c?'':' \u00b7 built in'}</div></div><div style="display:flex;gap:6px"><button class="x" data-te="${esc(t)}">Edit</button>${c?`<button class="x" data-ty="${esc(t)}">Remove</button>`:''}</div></div>`}).join('');
+  document.querySelectorAll('[data-te]').forEach(b=>b.onclick=()=>{const t=b.dataset.te,c=S.custom.find(x=>x.name===t);
+    TE={name:t,builtin:!c};$('tt').textContent='Edit plan type';$('addt').textContent='Save plan type';$('cant').hidden=false;
+    $('tn').value=t;$('tn').disabled=!c;$('tr').value=DEF[t];$('ts').checked=SIPT.includes(t);$('ts').disabled=true;$('tm').textContent='';$('tn').scrollIntoView({block:'center'})});
+  document.querySelectorAll('[data-ty]').forEach(b=>b.onclick=()=>{const t=b.dataset.ty,i=S.custom.findIndex(c=>c.name===t);
+    if(S.plans.some(p=>p.type===t)){$('tm').textContent='Remove the plans under '+t+' first.';return}
+    S.custom.splice(i,1);S.goal.sel=S.goal.sel.filter(x=>x!==t);delete S.goal.add[t];if(TE&&TE.name===t)endTE();$('tm').textContent='';save();syncTypes();fillSel();typeUI();render()});
+}
+$('cant').onclick=endTE;
+$('addt').onclick=()=>{
+  const n=$('tn').value.replace(/[<>"&]/g,'').trim(),r=+$('tr').value,rate=isNaN(r)?0:r;
+  if(TE){
+    if(TE.builtin)S.bdef[TE.name]=rate;
+    else{
+      if(!n){$('tn').focus();return}
+      if(TYPES.some(t=>t!==TE.name&&t.toLowerCase()===n.toLowerCase())){$('tm').textContent='That plan type already exists.';return}
+      const c=S.custom.find(x=>x.name===TE.name),old=c.name;c.name=n;c.rate=rate;
+      if(old!==n){S.plans.forEach(p=>{if(p.type===old)p.type=n});S.goal.sel=S.goal.sel.map(x=>x===old?n:x);
+        if(S.goal.add[old]!==undefined){S.goal.add[n]=S.goal.add[old];delete S.goal.add[old]}}
+    }
+    endTE();save();syncTypes();fillSel();typeUI();render();return;
+  }
+  if(!n){$('tn').focus();return}
+  if(TYPES.some(t=>t.toLowerCase()===n.toLowerCase())){$('tm').textContent='That plan type already exists.';return}
+  S.custom.push({name:n,rate,sip:$('ts').checked});$('tn').value='';$('ts').checked=false;$('tm').textContent='';
+  save();syncTypes();fillSel();$('pt').value=n;typeUI();render();
+};
+function render(){overview();lists();typeList();invList();goal()}
+fillSel();typeUI();
+render();
+if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+</script>
+</body>
+</html>
