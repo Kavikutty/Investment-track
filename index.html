@@ -76,6 +76,8 @@ input,select{width:100%;background:var(--s2);color:var(--tx);border:1px solid va
 const $=s=>document.querySelector(s);
 const store={get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 let plans=store.get('mt_plans',[]), cfg=store.get('mt_cfg',{url:'',key:''});
+const DEF_CFG={url:'https://gohlvemokspepfyblqis.supabase.co',key:'sb_publishable_1r9Ofr0JUFBzU67sPKVCjQ_gY_OH2Hn'};
+if(!cfg.url)cfg.url=DEF_CFG.url;if(!cfg.key)cfg.key=DEF_CFG.key;
 let tab='ov';
 const BASE=['FD','PPF','Mutual Fund','Stocks'];let myTypes=store.get('mt_types',[]);const allTypes=()=>[...BASE,...myTypes.filter(t=>!BASE.includes(t))];
 const inr=n=>'₹'+Math.round(n).toLocaleString('en-IN');
@@ -162,7 +164,7 @@ function exportXlsx(){
 
 /* Supabase sync: table "plans" with columns id text primary key, data jsonb */
 const sbOn=()=>cfg.url&&cfg.key;
-const sb=(path,o={})=>fetch(cfg.url.replace(/\/$/,'')+'/rest/v1/'+path,{...o,headers:{apikey:cfg.key,Authorization:'Bearer '+cfg.key,'Content-Type':'application/json',...(o.headers||{})}});
+const sb=(path,o={})=>fetch(cfg.url.replace(/\/$/,'')+'/rest/v1/'+path,{...o,headers:{apikey:cfg.key,...(cfg.key.startsWith('sb_')?{}:{Authorization:'Bearer '+cfg.key}),'Content-Type':'application/json',...(o.headers||{})}});
 async function push(p){if(!sbOn())return;try{await sb('plans?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates'},body:JSON.stringify([{id:p.id,data:p}])})}catch(e){}}
 async function remove(id){if(!sbOn())return;try{await sb('plans?id=eq.'+id,{method:'DELETE'})}catch(e){}}
 async function checkSetup(){
